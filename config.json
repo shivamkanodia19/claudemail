@@ -1,0 +1,14 @@
+{
+  "my_email": "shivamkanodia77@gmail.com",
+  "rules": [
+    {
+      "name": "Default follow-up",
+      "recipients": [],
+      "days_without_reply": 3,
+      "max_followups": 2,
+      "subject_filter": "",
+      "message_template": "Hi,\n\nJust following up on my previous email. Please let me know your thoughts when you get a chance.\n\nBest,\nShivam"
+    }
+  ],
+  "dry_run": false
+}
