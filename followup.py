@@ -29,6 +29,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import getaddresses
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -120,8 +121,12 @@ def mark_followup_sent(state, thread_id):
 
 
 def create_draft_reply(service, thread_id, to, subject, body, dry_run=False):
+    # Extract bare email address if in "Name <email>" format
+    parsed = getaddresses([to])
+    clean_to = parsed[0][1] if parsed and parsed[0][1] else to
+
     message = MIMEMultipart("alternative")
-    message["To"] = to
+    message["To"] = clean_to
     message["Subject"] = f"Re: {subject}" if not subject.startswith("Re:") else subject
 
     text_part = MIMEText(body, "plain")
@@ -229,8 +234,9 @@ def _scan_sent_emails(service, query, my_email, recipients, subject_filter,
         if recipients:
             check_recipients = recipients
         else:
-            # Extract recipient from the To header
-            check_recipients = [addr.strip() for addr in to_header.split(",") if addr.strip()]
+            # Extract clean email addresses from the To header
+            parsed = getaddresses([to_header])
+            check_recipients = [addr for _, addr in parsed if addr and "@" in addr]
             # Skip emails to self
             check_recipients = [r for r in check_recipients if my_email.lower() not in r.lower()]
             if not check_recipients:
@@ -252,6 +258,7 @@ def _scan_sent_emails(service, query, my_email, recipients, subject_filter,
             if draft_id:
                 print(f"  Draft created (id: {draft_id})")
                 mark_followup_sent(state, thread_id)
+                save_state(state)  # save after each draft so crashes don't lose progress
                 drafts_created += 1
             elif dry_run:
                 drafts_created += 1
